@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: svclb-traefik
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      app: svclb-traefik
+  template:
+    metadata:
+      labels:
+        app: svclb-traefik
+        svccontroller.k3s.cattle.io/svcname: traefik
+    spec:
+      containers:
+        - env:
+            - name: SRC_PORT
+              value: "80"
+            - name: DEST_PROTO
+              value: TCP
+            - name: DEST_PORT
+              value: "80"
+            - name: DEST_IP
+              value: 192.168.211.177
+          image: rancher/klipper-lb:v0.1.2
+          imagePullPolicy: IfNotPresent
+          name: lb-port-80
+          ports:
+            - containerPort: 80
+              hostPort: 80
+              name: lb-port-80
+              protocol: TCP
+          resources: {}
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        - env:
+            - name: SRC_PORT
+              value: "443"
+            - name: DEST_PROTO
+              value: TCP
+            - name: DEST_PORT
+              value: "443"
+            - name: DEST_IP
+              value: 192.168.211.177
+          image: rancher/klipper-lb:v0.1.2
+          imagePullPolicy: IfNotPresent
+          name: lb-port-443
+          ports:
+            - containerPort: 443
+              hostPort: 443
+              name: lb-port-443
+              protocol: TCP
+          resources: {}
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+        - env:
+            - name: SRC_PORT
+              value: "8080"
+            - name: DEST_PROTO
+              value: TCP
+            - name: DEST_PORT
+              value: "8080"
+            - name: DEST_IP
+              value: 192.168.211.177
+          image: rancher/klipper-lb:v0.1.2
+          imagePullPolicy: IfNotPresent
+          name: lb-port-8080
+          ports:
+            - containerPort: 8080
+              hostPort: 8080
+              name: lb-port-8080
+              protocol: TCP
+          resources: {}
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+  updateStrategy:
+    rollingUpdate:
+      maxUnavailable: 1
+    type: RollingUpdate

@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  clusterIP: 192.168.211.177
+  externalTrafficPolicy: Cluster
+  ports:
+    - name: web
+      nodePort: 32286
+      port: 80
+      protocol: TCP
+      targetPort: web
+    - name: websecure
+      nodePort: 30108
+      port: 443
+      protocol: TCP
+      targetPort: websecure
+    - name: admin
+      nodePort: 30582
+      port: 8080
+      protocol: TCP
+      targetPort: admin
+  selector:
+    app: traefik
+  type: LoadBalancer
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  namespace: kube-system
+  name: traefik-ingress-controller
+
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: traefik
+  namespace: kube-system
+  labels:
+    app: traefik
+
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: traefik
+  template:
+    metadata:
+      labels:
+        app: traefik
+    spec:
+      serviceAccountName: traefik-ingress-controller
+      containers:
+        - name: traefik
+          image: traefik:v2.0
+          args:
+            - --api.insecure
+            - --accesslog
+            - --entrypoints.web.Address=:80
+            - --entrypoints.websecure.Address=:443
+            - --providers.kubernetescrd
+            - --certificatesresolvers.default.acme.tlschallenge
+            - --certificatesresolvers.default.acme.email=me@myself.com
+            - --certificatesresolvers.default.acme.storage=acme.json
+            # Please note that this is the staging Let's Encrypt server.
+            # Once you get things working, you should remove that whole line altogether.
+            # - --certificatesresolvers.default.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory
+          ports:
+            - name: web
+              containerPort: 80
+            - name: websecure
+              containerPort: 443
+            - name: admin
+              containerPort: 8080

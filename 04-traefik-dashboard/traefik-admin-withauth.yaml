@@ -1,0 +1,28 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: traefik-auth
+  namespace: kube-system
+spec:
+  basicAuth:
+    secret: traefik-admin
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: ingressrouteadmin
+  namespace: kube-system
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`traefik.celleri.ch`)
+      kind: Rule
+      services:
+        - name: traefik
+          port: 8080
+      middlewares:
+        - name: traefik-auth
+  tls:
+    certResolver: default
